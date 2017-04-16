@@ -18,8 +18,10 @@ main = do
 
 
 -- score mt | trace ("sc " ++ show mt) False = undefined
-score (CubeState c) = V.length $ V.filter (\(a,b) -> a == b `mod` fArea) $ V.zip cachedFaceColours c
-  where scoreFace (c, cs) = V.length $ V.filter (== c) cs
+-- score (CubeState c) = V.length $ V.filter (== True) $ V.zipWith (==) cachedFaceColours c
+score :: CubeState -> Int
+score (CubeState c) = V.sum $ V.zipWith isEq cachedFaceColours c
+  where isEq a b | a == b = 1 | otherwise = 0
 
 cachedFaceColours = V.fromList (concatMap (replicate fArea) colours)
 
