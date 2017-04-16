@@ -1,6 +1,7 @@
 module MoveTable where
 
 import Data.List
+-- import Control.
 import Cube
 
 -- Name (e.g. R, L'), how this maps the old to the new.
@@ -23,37 +24,39 @@ instance Show MoveTable where
 -- the x axis of local face coords, where y = 0.
 faceRotationCache :: Axis -> [(Int, Rotation)]
 faceRotationCache a
-  | a == Xaxis = [(0, RotCW), (3, RotCCW), (5, RotCW), (1, RotCW)] -- x: blue-green axis
+  --             yellow, red, white, orange
+  | a == Xaxis = [(0, RotCCW), (1, RotCCW), (5, RotCCW), (3, RotCW)] -- x: blue-green axis
   --             yellow, green, white, blue
-  | a == Yaxis = [(0, RotNone), (4, RotCCW), (5, RotNone), (2, RotCW)] -- y: red-orange axis
+  | a == Yaxis = [(0, Rot180), (4, RotCCW), (5, RotNone), (2, RotCW)] -- y: red-orange axis
   --              red, green, orange, blue
   | a == Zaxis = [(1, RotNone), (2, RotNone), (3, RotNone), (4, RotNone)] -- z: yellow-white axis
 
-identityMove = MoveTable "I" [0.. (cubeSize ^ 2) * 6 - 1]
+identityMove = MoveTable "" [0.. (cubeSize ^ 2) * 6 - 1]
 
--- 'Dot product' of two movetables. Could be wrong way around..
-moveTableDot :: MoveTable -> MoveTable -> MoveTable
-moveTableDot (MoveTable s1 m1) (MoveTable s2 m2)
-  = MoveTable (s1 ++ s2) $ map (\x -> m1 !! x) m2
+r  = moveTable Xaxis 0 RotCW
+f  = moveTable Yaxis 0 RotCW
+u  = moveTable Zaxis 0 RotCW
+r' = moveTable Xaxis 0 RotCCW
+f' = moveTable Yaxis 0 RotCCW
+u' = moveTable Zaxis 0 RotCCW
 
+l  = moveTable Xaxis (cubeSize -1) RotCCW
+b  = moveTable Yaxis (cubeSize -1) RotCCW
+d  = moveTable Zaxis (cubeSize -1) RotCCW
+l' = moveTable Xaxis (cubeSize -1) RotCW
+b' = moveTable Yaxis (cubeSize -1) RotCW
+d' = moveTable Zaxis (cubeSize -1) RotCW
 
--- rightM = moveTableDot (rotateEdgeTable 0 0) (rotateFaceTable 0 1) "R"
+moves = [r, f, u, r', f', u', l, b, d, l', b', d']
+
 moveTable :: Axis -> Int -> Rotation -> MoveTable
 moveTable axis slice rot
   | slice == 0 =
     moveTableDot edgeTable (rotateFaceTable (axisToFace axis True) rot)
-  | slice == cubeSize =
+  | slice == cubeSize - 1 =
     moveTableDot edgeTable (rotateFaceTable (axisToFace axis False) rot)
   | otherwise = edgeTable
   where edgeTable = rotateEdgeTable axis slice rot
-
-r = moveTable Xaxis 0 RotCW
-f = moveTable Yaxis 0 RotCW
-u = moveTable Zaxis 0 RotCW
-
-l = moveTable Xaxis (cubeSize -1) RotCCW
-b = moveTable Yaxis (cubeSize -1) RotCCW
-d = moveTable Zaxis (cubeSize -1) RotCCW
 
   --              face ix, rot by
 rotateFaceTable :: Int -> Rotation -> MoveTable
@@ -64,7 +67,7 @@ rotateFaceTable ix rot = MoveTable s
   where (MoveTable s table) = identityMove
 
 rotateEdgeTable :: Axis -> Int -> Rotation -> MoveTable
-rotateEdgeTable axis slice rot = MoveTable "TODO" $
+rotateEdgeTable axis slice rot = MoveTable (nameMove axis slice rot) $
                             merge [0..(faceToIndex 6) -1] $ sliceRotationMap
   where
     merge (x:xs) ((i,y) : ys)
@@ -80,7 +83,28 @@ rotateEdgeTable axis slice rot = MoveTable "TODO" $
     valuesInSlice = map valsEdge $ faceRotationCache axis
       where valsEdge (face, rot) = map (\(x) -> toIndex face (rotate rot (x, slice))) [0..cubeSize - 1]
 
+nameMove axis slice rot
+  | rot == RotNone = ""
+  | otherwise = nameFace ++ nameRot ++ " "
+  where nameFace = coloursStr (axisToFace axis (not isReversed))
+        isReversed = (slice * 2 > cubeSize)
+        nameRot
+          | rot == Rot180 = "2"
+          | (rot == RotCW && isReversed) ||
+            (rot == RotCCW && not isReversed) = "'"
+          | otherwise = ""
+
+
+
 -- Apply movetable to a cubestate.
 makeMove :: CubeState -> MoveTable -> CubeState
 makeMove (CubeState state) (MoveTable s cmap)
   = CubeState $ map (\x -> state !! x) cmap
+
+makeMoveSequence :: [MoveTable] -> MoveTable
+makeMoveSequence = foldr moveTableDot identityMove
+
+-- 'Dot product' of two movetables. Could be wrong way around..
+moveTableDot :: MoveTable -> MoveTable -> MoveTable
+moveTableDot (MoveTable s1 m1) (MoveTable s2 m2)
+  = MoveTable (s1 ++ s2) $ map (\x -> m1 !! x) m2

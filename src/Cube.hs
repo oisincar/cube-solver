@@ -10,25 +10,29 @@ data Rotation = RotNone | RotCW | RotCCW | Rot180 deriving (Eq)
 
 data Colour = Yellow | Red | Green | Orange | Blue | White deriving (Eq)
 instance Show Colour where
-  show c = "\x1b[" ++ (colour c) ++ "██ " ++ "\x1b[0m"
+  -- show c = "\x1b[" ++ (colour c) ++ " ██" ++ "\x1b[0m"
+  show c = "\x1b[" ++ (colour c) ++ "██ "
     where
-      colour Yellow = "33;1m"
-      colour Red    = "31m"
-      colour Green  = "32m"
-      colour Orange = "33m"
-      colour Blue   = "34m"
-      colour White  = "37;1m"
+      colour Yellow = "1;33m"
+      colour Red    = "0;31m"
+      colour Green  = "0;32m"
+      colour Orange = "0;33m"
+      colour Blue   = "0;34m"
+      colour White  = "1;37m"
 
-cubeSize = 7
+cubeSize = 3
 
 printCube :: Show a => [a] -> [Char]
 printCube c =
+  "\n"
   -- yellow
-  concatMap showPaddedLine (take cubeSize rows)
+  ++ concatMap showPaddedLine (take cubeSize rows)
   -- blue/red/green/orange rows
   ++ (concatMap (\n -> (concat $ everyCubeSize (drop n middleRows)) ++ "\n") [0..cubeSize -1])
   -- white
   ++ concatMap showPaddedLine (drop (cubeSize * 5) rows)
+  -- reset ansii keys
+  ++ "\x1b[0m"
   where
     everyCubeSize [] = []
     everyCubeSize xs = head xs : everyCubeSize (drop cubeSize xs)
@@ -38,15 +42,17 @@ printCube c =
       where mRows = map showLine (take (cubeSize * 4) (drop cubeSize rows))
 
     rows = splitEvery cubeSize c
-    splitEvery _ [] = []
-    splitEvery n list = first : (splitEvery n rest)
-      where (first,rest) = splitAt n list
 
     showLine l = (concatMap show l)
     showPaddedLine l = (replicate (cubeSize * 3) ' ') ++ (showLine l) ++ "\n"
 
 baseState = CubeState $ concatMap (replicate (cubeSize^2)) colours
-  where colours = [Yellow, Red, Green, Orange, Blue, White]
+colours = [Yellow, Red, Green, Orange, Blue, White]
+coloursStr x = ["u", "f", "r", "b", "l", "d"] !! x
+
+splitEvery _ [] = []
+splitEvery n list = first : (splitEvery n rest)
+  where (first,rest) = splitAt n list
 
 -- Returns local face coords, ignoring which face it's on.
 fromIndex :: Int -> (Int, Int)
@@ -63,8 +69,8 @@ faceToIndex f = (cubeSize ^ 2) * f
 -- Convert axis and direction to a face index.
 axisToFace :: Axis -> Bool -> Int
 axisToFace axis isPos
-  | axis == Xaxis && isPos = 4
-  | axis == Xaxis && not isPos = 2
+  | axis == Xaxis && isPos = 2
+  | axis == Xaxis && not isPos = 4
   | axis == Yaxis && isPos = 1
   | axis == Yaxis && not isPos = 3
   | axis == Zaxis && isPos = 0
@@ -79,6 +85,7 @@ rotToInt rot
   | rot == RotCCW  = 3
 
 -- rotates a point in facewise coordinates.
+rotate :: Rotation -> (Int, Int) -> (Int, Int)
 rotate rot (x, y)
   | rot == RotNone = (x, y)
   | rot == RotCW   = (y, cubeSize -x -1)
