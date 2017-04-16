@@ -34,6 +34,22 @@ faceRotationCache a
 
 identityMove = MoveTable "" $ V.fromList [0.. (cubeSize ^ 2) * 6 - 1]
 
+
+allMovesApplied = map (makeMove baseState) moves2
+
+moves2 :: [MoveTable]
+moves2 = concat [movesForAxisRot axis rev rot
+                | axis <- [Xaxis, Yaxis, Zaxis]
+                , rev <- [True, False]
+                , rot <- [RotCW, RotCCW, Rot180]]
+
+movesForAxisRot :: Axis -> Bool -> Rotation -> [MoveTable]
+movesForAxisRot a rev rot = blockMoves
+  where blockMoves = head allSlices : zipWith (moveTableDot) blockMoves (tail allSlices)
+        allSlices = [moveTable a sl rot | sl <- slicesIx]
+        slicesIx | rev = [cubeSize -1, cubeSize -2.. (cubeSize + 1) `div` 2]
+                 | otherwise = [0 .. (cubeSize `div` 2) -1]
+
 r  = moveTable Xaxis 0 RotCW
 f  = moveTable Yaxis 0 RotCW
 u  = moveTable Zaxis 0 RotCW
@@ -41,12 +57,12 @@ r' = moveTable Xaxis 0 RotCCW
 f' = moveTable Yaxis 0 RotCCW
 u' = moveTable Zaxis 0 RotCCW
 
-l  = moveTable Xaxis (cubeSize -1) RotCCW
-b  = moveTable Yaxis (cubeSize -1) RotCCW
-d  = moveTable Zaxis (cubeSize -1) RotCCW
-l' = moveTable Xaxis (cubeSize -1) RotCW
-b' = moveTable Yaxis (cubeSize -1) RotCW
-d' = moveTable Zaxis (cubeSize -1) RotCW
+l  = moveTable Xaxis (cubeSize -1) RotCW
+b  = moveTable Yaxis (cubeSize -1) RotCW
+d  = moveTable Zaxis (cubeSize -1) RotCW
+l' = moveTable Xaxis (cubeSize -1) RotCCW
+b' = moveTable Yaxis (cubeSize -1) RotCCW
+d' = moveTable Zaxis (cubeSize -1) RotCCW
 
 moves = [r, f, u, r', f', u', l, b, d, l', b', d']
 
@@ -58,7 +74,15 @@ moveTable axis slice rot
   | slice == cubeSize - 1 =
     moveTableDot edgeTable (rotateFaceTable (axisToFace axis False) rot)
   | otherwise = edgeTable
-  where edgeTable = rotateEdgeTable axis slice rot
+  where edgeTable = rotateEdgeTable axis slice rotation
+        rotation | slice*2 < cubeSize = rot
+                 | otherwise = flipRot rot
+        flipRot r
+          | r == RotCW  = RotCCW
+          | r == RotCCW = RotCW
+          | otherwise   = r
+
+  -- TODO: Fix
 
   --              face ix, rot by
 rotateFaceTable :: Int -> Rotation -> MoveTable

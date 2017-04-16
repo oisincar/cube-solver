@@ -22,7 +22,7 @@ instance Show Colour where
       colour Blue   = "0;34m"
       colour White  = "1;37m"
 
-cubeSize = 3
+cubeSize = 7
 
 printCube :: Show a => [a] -> [Char]
 printCube c =
