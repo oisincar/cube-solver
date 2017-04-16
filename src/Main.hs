@@ -2,7 +2,7 @@ import System.IO
 import Debug.Trace
 import Data.List
 import Data.Ord
-import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as V
 
 import MoveTable
 -- import qualified Cube
@@ -16,16 +16,21 @@ main = do
   -- let coloursLst = concat $ replicate 10000000 colours
   -- print $ length $ filter (== Yellow) coloursLst
 
--- score mt | trace ("sc " ++ show mt) False = undefined
-score (CubeState c) = sum $ map scoreFace $ zip colours (splitEveryV fArea c)
-  where scoreFace (c, cs) = length $ V.filter (== c) cs
-        fArea = Cube.cubeSize^2
 
-splitEveryV :: Int -> V.Vector a -> [V.Vector a]
-splitEveryV n list
-  | null list = []
-  | otherwise = first : (splitEveryV n rest)
-  where (first,rest) = V.splitAt n list
+-- score mt | trace ("sc " ++ show mt) False = undefined
+score (CubeState c) = V.length $ V.filter (\(a,b) -> a == b `mod` fArea) $ V.zip cachedFaceColours c
+  where scoreFace (c, cs) = V.length $ V.filter (== c) cs
+
+cachedFaceColours = V.fromList (concatMap (replicate fArea) colours)
+
+fArea = Cube.cubeSize^2
+
+
+-- splitEveryV :: Int -> V.Vector a -> [V.Vector a]
+-- splitEveryV n list
+--   | V.null list = []
+--   | otherwise = first : (splitEveryV n rest)
+--   where (first,rest) = V.splitAt n list
 
 -- score (CubeState c) = length $ V.filter (==Yellow) c
 
@@ -37,7 +42,7 @@ bestMove2 st = maximumBy (comparing fst) [(scoreRec 6 (makeMove st m), m) | m <-
 testCube = makeMove Cube.baseState $ makeMoveSequence
   [r', u, r', d, d, r,r, u', r', u', r', d,r, u', r', d, r, r, u, l, l']
 
-statesList :: [(Int, String, CubeState)]
+-- statesList :: [(Int, String, CubeState)]
 statesList = (0, "Base", testCube) : map (\(_, _, st) -> let (score, (MoveTable name table)) = (bestMove2 st)
                                               in (score, name, makeMove st (MoveTable name table))
                                  ) statesList

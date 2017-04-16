@@ -1,7 +1,7 @@
 module MoveTable where
 
 import Data.List
-import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as V
 -- import qualified Data.Vector.Unboxed as U
 import Cube
 
@@ -49,7 +49,6 @@ b' = moveTable Yaxis (cubeSize -1) RotCW
 d' = moveTable Zaxis (cubeSize -1) RotCW
 
 moves = [r, f, u, r', f', u', l, b, d, l', b', d']
-
 
 moveTable :: Axis -> Int -> Rotation -> MoveTable
 moveTable axis slice rot

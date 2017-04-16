@@ -1,8 +1,9 @@
 module Cube where
 
-import qualified Data.Vector as V
+-- import GHC.Prim
+import qualified Data.Vector.Unboxed as V
 
-data CubeState = CubeState (V.Vector Colour)
+data CubeState = CubeState (V.Vector Int)
 instance Show CubeState where
   show (CubeState c) = printCube $ V.toList c
 
@@ -10,17 +11,41 @@ data Axis = Xaxis | Yaxis | Zaxis deriving (Eq)
 
 data Rotation = RotNone | RotCW | RotCCW | Rot180 deriving (Eq)
 
-data Colour = Yellow | Red | Green | Orange | Blue | White deriving (Eq)
-instance Show Colour where
-  -- show c = "\x1b[" ++ (colour c) ++ " ██" ++ "\x1b[0m"
-  show c = "\x1b[" ++ (colour c) ++ "██ "
+-- data Colour = Colour Int deriving (Eq) --Yellow | Red | Green | Orange | Blue | White deriving (Eq)
+-- instance Show Colour where
+--   -- show c = "\x1b[" ++ (colour c) ++ " ██" ++ "\x1b[0m"
+--   show (Colour c) = "\x1b[" ++ (colour c) ++ "██ "
+--     where
+--       colour 0 = "1;33m"
+--       colour 1 = "0;31m"
+--       colour 2 = "0;32m"
+--       colour 3 = "0;33m"
+--       colour 4 = "0;34m"
+--       colour 5 = "1;37m"
+
+showColour c = "\x1b[" ++ (colour c) ++ "██ "
     where
-      colour Yellow = "1;33m"
-      colour Red    = "0;31m"
-      colour Green  = "0;32m"
-      colour Orange = "0;33m"
-      colour Blue   = "0;34m"
-      colour White  = "1;37m"
+      colour 0 = "1;33m"
+      colour 1 = "0;31m"
+      colour 2 = "0;32m"
+      colour 3 = "0;33m"
+      colour 4 = "0;34m"
+      colour 5 = "1;37m"
+
+colours = [0..5] -- [Yellow, Red, Green, Orange, Blue, White]
+coloursStr x = ["u", "f", "r", "b", "l", "d"] !! x
+
+-- data Colour = Yellow | Red | Green | Orange | Blue | White deriving (Eq)
+-- instance Show Colour where
+--   -- show c = "\x1b[" ++ (colour c) ++ " ██" ++ "\x1b[0m"
+--   show c = "\x1b[" ++ (colour c) ++ "██ "
+--     where
+--       colour Yellow = "1;33m"
+--       colour Red    = "0;31m"
+--       colour Green  = "0;32m"
+--       colour Orange = "0;33m"
+--       colour Blue   = "0;34m"
+--       colour White  = "1;37m"
 
 cubeSize = 3
 
@@ -50,8 +75,6 @@ printCube c =
     showPaddedLine l = (replicate (cubeSize * 3) ' ') ++ (showLine l) ++ "\n"
 
 baseState = CubeState $ V.fromList $ concatMap (replicate (cubeSize^2)) colours
-colours = [Yellow, Red, Green, Orange, Blue, White]
-coloursStr x = ["u", "f", "r", "b", "l", "d"] !! x
 
 splitEvery _ [] = []
 splitEvery n list = first : (splitEvery n rest)
