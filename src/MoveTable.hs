@@ -1,13 +1,14 @@
 module MoveTable where
 
 import Data.List
--- import Control.
+import qualified Data.Vector as V
+-- import qualified Data.Vector.Unboxed as U
 import Cube
 
 -- Name (e.g. R, L'), how this maps the old to the new.
-data MoveTable = MoveTable String [Int] --deriving (Show)
+data MoveTable = MoveTable String (V.Vector Int) --deriving (Show)
 instance Show MoveTable where
-  show (MoveTable s c) = s ++ "\n" ++ printCube c
+  show (MoveTable s c) = s ++ "\n" ++ (printCube $ V.toList c)
 
 -- Layout of sides:
 -- Each side has pieces layed out in ascending ix from top left to bottom right.
@@ -31,7 +32,7 @@ faceRotationCache a
   --              red, green, orange, blue
   | a == Zaxis = [(1, RotNone), (2, RotNone), (3, RotNone), (4, RotNone)] -- z: yellow-white axis
 
-identityMove = MoveTable "" [0.. (cubeSize ^ 2) * 6 - 1]
+identityMove = MoveTable "" $ V.fromList [0.. (cubeSize ^ 2) * 6 - 1]
 
 r  = moveTable Xaxis 0 RotCW
 f  = moveTable Yaxis 0 RotCW
@@ -49,6 +50,7 @@ d' = moveTable Zaxis (cubeSize -1) RotCW
 
 moves = [r, f, u, r', f', u', l, b, d, l', b', d']
 
+
 moveTable :: Axis -> Int -> Rotation -> MoveTable
 moveTable axis slice rot
   | slice == 0 =
@@ -60,15 +62,16 @@ moveTable axis slice rot
 
   --              face ix, rot by
 rotateFaceTable :: Int -> Rotation -> MoveTable
-rotateFaceTable ix rot = MoveTable s
-  $ take (faceToIndex ix) table
-  ++ map ((toIndex ix) . (rotate rot) . fromIndex) (take (faceToIndex 1) $ drop (faceToIndex ix) table)
-  ++ drop (faceToIndex (ix + 1)) table
+rotateFaceTable ix rot = MoveTable s $
+  V.take (faceToIndex ix) table
+  V.++ V.map ((toIndex ix) . (rotate rot) . fromIndex)
+     (V.take (faceToIndex 1) $ V.drop (faceToIndex ix) table)
+  V.++ V.drop (faceToIndex (ix + 1)) table
   where (MoveTable s table) = identityMove
 
 rotateEdgeTable :: Axis -> Int -> Rotation -> MoveTable
 rotateEdgeTable axis slice rot = MoveTable (nameMove axis slice rot) $
-                            merge [0..(faceToIndex 6) -1] $ sliceRotationMap
+                                 V.fromList $ merge [0..(faceToIndex 6) -1] $ sliceRotationMap
   where
     merge (x:xs) ((i,y) : ys)
           | i > x     = x : merge xs ((i,y) : ys)
@@ -99,7 +102,7 @@ nameMove axis slice rot
 -- Apply movetable to a cubestate.
 makeMove :: CubeState -> MoveTable -> CubeState
 makeMove (CubeState state) (MoveTable s cmap)
-  = CubeState $ map (\x -> state !! x) cmap
+  = CubeState $ V.map (\x -> state V.! x) cmap
 
 makeMoveSequence :: [MoveTable] -> MoveTable
 makeMoveSequence = foldr moveTableDot identityMove
@@ -107,4 +110,4 @@ makeMoveSequence = foldr moveTableDot identityMove
 -- 'Dot product' of two movetables. Could be wrong way around..
 moveTableDot :: MoveTable -> MoveTable -> MoveTable
 moveTableDot (MoveTable s1 m1) (MoveTable s2 m2)
-  = MoveTable (s1 ++ s2) $ map (\x -> m1 !! x) m2
+  = MoveTable (s1 ++ s2) $ V.map (\x -> m1 V.! x) m2

@@ -1,8 +1,10 @@
 module Cube where
 
-data CubeState = CubeState [Colour]
+import qualified Data.Vector as V
+
+data CubeState = CubeState (V.Vector Colour)
 instance Show CubeState where
-  show (CubeState c) = printCube c
+  show (CubeState c) = printCube $ V.toList c
 
 data Axis = Xaxis | Yaxis | Zaxis deriving (Eq)
 
@@ -34,6 +36,7 @@ printCube c =
   -- reset ansii keys
   ++ "\x1b[0m"
   where
+
     everyCubeSize [] = []
     everyCubeSize xs = head xs : everyCubeSize (drop cubeSize xs)
 
@@ -46,7 +49,7 @@ printCube c =
     showLine l = (concatMap show l)
     showPaddedLine l = (replicate (cubeSize * 3) ' ') ++ (showLine l) ++ "\n"
 
-baseState = CubeState $ concatMap (replicate (cubeSize^2)) colours
+baseState = CubeState $ V.fromList $ concatMap (replicate (cubeSize^2)) colours
 colours = [Yellow, Red, Green, Orange, Blue, White]
 coloursStr x = ["u", "f", "r", "b", "l", "d"] !! x
 

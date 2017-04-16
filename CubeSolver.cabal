@@ -20,6 +20,6 @@ executable CubeSolver
   -- other-modules:       
   -- other-extensions:    
   -- build-depends:       base >=4.8 && <4.9
-  build-depends:       base >=4.8 && <5.0
+  build-depends:       vector, base >=4.8 && <5.0
   hs-source-dirs:      src
   default-language:    Haskell2010
