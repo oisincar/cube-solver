@@ -16,18 +16,12 @@ main = do
   -- let coloursLst = concat $ replicate 10000000 colours
   -- print $ length $ filter (== Yellow) coloursLst
 
--- score mt | trace ("sc " ++ show mt) False = undefined
-score (CubeState c) = sum $ map scoreFace $ zip colours (splitEveryV fArea c)
-  where scoreFace (c, cs) = length $ V.filter (== c) cs
-        fArea = Cube.cubeSize^2
+score :: CubeState -> Int
+score (CubeState c) = V.sum $ V.zipWith isEq cachedFaceColours c
+  where isEq a b | a == b = 1 | otherwise = 0
 
-splitEveryV :: Int -> V.Vector a -> [V.Vector a]
-splitEveryV n list
-  | null list = []
-  | otherwise = first : (splitEveryV n rest)
-  where (first,rest) = V.splitAt n list
-
--- score (CubeState c) = length $ V.filter (==Yellow) c
+cachedFaceColours = V.fromList (concatMap (replicate fArea) colours)
+  where fArea = Cube.cubeSize^2
 
 scoreRec 1 st = score st
 scoreRec depth st = maximum [scoreRec (depth -1) (makeMove st m) | m <- moves]
